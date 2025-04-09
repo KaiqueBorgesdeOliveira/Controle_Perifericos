@@ -54,15 +54,15 @@ Aplicativo desktop para controle de estoque de periféricos com registro de cham
    
 ## 📁 controle-perifericos/
 
-  ├── 📄 controle_perifericos.py   # Código principal
-  ├── 📄 inventory.db             # Banco de dados (criado automaticamente)
-  ├── 📄 README.md                # Este arquivo
-  └── 📁 dist/                    # Pasta com o executável (após build)
+  - ├── 📄 controle_perifericos.py   # Código principal
+  - ├── 📄 inventory.db             # Banco de dados (criado automaticamente)
+  - ├── 📄 README.md                # Este arquivo
+  - └── 📁 dist/                    # Pasta com o executável (após build)
 
 ## 📬 Contato
-Desenvolvido por [Kaique Borges] - [https://www.linkedin.com/in/kaique-borges-3b5478117/]
+Desenvolvido por [Kaique Borges] - (https://www.linkedin.com/in/kaique-borges-3b5478117/)
 
-🔗 GitHub: (https://github.com/KaiqueBorgesdeOliveira/)
+🔗 GitHub: https://github.com/KaiqueBorgesdeOliveira/
 
 🎉 Pronto! Agora você pode gerenciar seu estoque de periféricos com facilidade!
 Se tiver dúvidas, abra uma issue no repositório. 🚀
