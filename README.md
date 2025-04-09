@@ -60,7 +60,7 @@ Aplicativo desktop para controle de estoque de periféricos com registro de cham
   - └── 📁 dist/                    # Pasta com o executável (após build)
 
 ## 📬 Contato
-Desenvolvido por [Kaique Borges] - (https://www.linkedin.com/in/kaique-borges-3b5478117/)
+Desenvolvido por Kaique Borges - https://www.linkedin.com/in/kaique-borges-3b5478117/
 
 🔗 GitHub: https://github.com/KaiqueBorgesdeOliveira/
 
