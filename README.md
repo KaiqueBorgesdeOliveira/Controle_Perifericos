@@ -1,3 +1,5 @@
+![image](https://github.com/user-attachments/assets/c72ba9ff-907e-4b4f-9992-a7a46f9fbf0c)
+
 # 📦 Controle de Periféricos - Sistema de Gerenciamento
 
 ![Python](https://img.shields.io/badge/Python-3.13%2B-blue)
