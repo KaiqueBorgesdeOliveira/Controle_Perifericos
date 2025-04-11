@@ -2,24 +2,108 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 from datetime import datetime
+from PIL import Image, ImageTk
+import os
 
 class InventoryApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Controle de Periféricos - Suporte Corporativo")
-        self.root.geometry("1000x700")
+        
+        # Fixar o tamanho da janela e centralizar
+        window_width = 1200
+        window_height = 800
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        center_x = int((screen_width - window_width) / 2)
+        center_y = int((screen_height - window_height) / 2)
+        
+        self.root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
+        self.root.resizable(False, False)  # Desabilitar redimensionamento
+        
+        # Configurar ícone da janela
+        try:
+            self.root.iconbitmap("uol_icon.ico")
+        except:
+            print("Ícone não encontrado")
         
         # Conectar ao banco de dados
         self.conn = sqlite3.connect('inventory.db')
         self.c = self.conn.cursor()
         
-        # Criar tabelas se não existirem
+        # Definir cores do Grupo UOL e cores complementares
+        self.colors = {
+            'yellow': '#FFD700',      # Amarelo UOL
+            'orange': '#FF6B00',      # Laranja UOL
+            'blue': '#0066CC',        # Azul UOL
+            'dark_blue': '#1E1E2D',   # Azul escuro para fundo
+            'light_yellow': '#FFEB3B', # Amarelo claro
+            'dark_gray': '#2D2D3A',   # Cinza escuro
+            'light_gray': '#3F3F4D',  # Cinza claro
+            'white': '#FFFFFF',       # Branco
+            'black': '#000000'        # Preto
+        }
+
+        # Configurar o fundo da janela principal
+        self.root.configure(bg=self.colors['dark_blue'])
+        
+        # Configurar estilos
+        self.style = ttk.Style()
+        
+        # Estilo geral
+        self.style.configure('.',
+                           background=self.colors['dark_blue'],
+                           foreground=self.colors['white'])
+        
+        # Estilo dos botões
+        self.style.configure('Action.TButton',
+                           background=self.colors['yellow'],
+                           foreground=self.colors['black'],
+                           padding=(20, 10),
+                           font=('Arial', 10, 'bold'))
+        
+        self.style.map('Action.TButton',
+                      background=[('active', self.colors['orange'])],
+                      foreground=[('active', self.colors['white'])])
+        
+        # Estilo dos labels
+        self.style.configure('Label.TLabel',
+                           background=self.colors['dark_blue'],
+                           foreground=self.colors['white'],
+                           font=('Arial', 10))
+        
+        # Estilo do título
+        self.style.configure('Title.TLabel',
+                           background=self.colors['dark_blue'],
+                           foreground=self.colors['yellow'],
+                           font=('Arial', 24, 'bold'))
+        
+        # Estilo da Treeview
+        self.style.configure('Treeview',
+                           background=self.colors['light_gray'],
+                           foreground=self.colors['white'],
+                           fieldbackground=self.colors['light_gray'],
+                           rowheight=25)
+        
+        self.style.configure('Treeview.Heading',
+                           background=self.colors['dark_gray'],
+                           foreground=self.colors['yellow'],
+                           font=('Arial', 10, 'bold'))
+        
+        self.style.map('Treeview',
+                      background=[('selected', self.colors['yellow'])],
+                      foreground=[('selected', self.colors['black'])])
+        
+        # Estilo dos frames
+        self.style.configure('Main.TFrame',
+                           background=self.colors['dark_blue'])
+        
+        self.style.configure('Control.TFrame',
+                           background=self.colors['dark_blue'])
+        
+        # Inicializar banco de dados e interface
         self.create_tables()
-        
-        # Adicionar itens padrão se a tabela estiver vazia
         self.add_default_items()
-        
-        # Interface do usuário
         self.create_widgets()
         
     def create_tables(self):
@@ -73,76 +157,223 @@ class InventoryApp:
             self.conn.commit()
         except sqlite3.Error as e:
             print(f"Erro ao adicionar itens padrão: {e}")
-    
-    def create_widgets(self):
-        # Frame principal
-        main_frame = ttk.Frame(self.root, padding="10")
-        main_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Treeview para exibir os periféricos
-        self.tree = ttk.Treeview(main_frame, columns=('Name', 'Current', 'Min', 'Need'), show='headings')
+    def create_widgets(self):
+        # Container principal
+        main_container = ttk.Frame(self.root, style='Main.TFrame')
+        main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Frame do cabeçalho com logo
+        header_frame = ttk.Frame(main_container, style='Main.TFrame')
+        header_frame.pack(fill=tk.X, pady=(0, 20))
+        
+        # Carregar e exibir o logo do UOL
+        try:
+            logo_path = os.path.join('assets', 'uol_logo.png')
+            if os.path.exists(logo_path):
+                logo_image = Image.open(logo_path)
+                # Ajustar o tamanho do logo mantendo a proporção
+                logo_width = 80  # Largura desejada
+                logo_height = 80  # Altura desejada
+                logo_image = logo_image.resize((logo_width, logo_height), Image.Resampling.LANCZOS)
+                self.logo_photo = ImageTk.PhotoImage(logo_image)
+                logo_label = ttk.Label(header_frame, image=self.logo_photo, background=self.colors['dark_blue'])
+                logo_label.pack(side=tk.LEFT, padx=(20, 40))
+            else:
+                print("Arquivo do logo não encontrado")
+        except Exception as e:
+            print(f"Erro ao carregar o logo: {e}")
+        
+        # Título com padding ajustado
+        title_label = ttk.Label(header_frame,
+                              text="Controle de Periféricos - Suporte Corporativo",
+                              style='Title.TLabel',
+                              font=('Arial', 24, 'bold'))
+        title_label.pack(side=tk.LEFT)
+        
+        # Frame para a tabela com borda
+        table_frame = ttk.Frame(main_container, style='Main.TFrame')
+        table_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
+        
+        # Treeview e Scrollbar
+        tree_scroll = ttk.Scrollbar(table_frame)
+        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.tree = ttk.Treeview(table_frame,
+                                columns=('Name', 'Current', 'Min', 'Need'),
+                                show='headings',
+                                style='Treeview',
+                                yscrollcommand=tree_scroll.set)
+        
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        tree_scroll.config(command=self.tree.yview)
+        
+        # Configurar colunas
         self.tree.heading('Name', text='Periférico')
         self.tree.heading('Current', text='Em Estoque')
         self.tree.heading('Min', text='Mínimo')
         self.tree.heading('Need', text='Precisa Solicitar')
-        self.tree.column('Name', width=300)
-        self.tree.column('Current', width=100, anchor=tk.CENTER)
-        self.tree.column('Min', width=100, anchor=tk.CENTER)
-        self.tree.column('Need', width=150, anchor=tk.CENTER)
-        self.tree.pack(fill=tk.BOTH, expand=True)
         
-        # Frame para controles
-        control_frame = ttk.Frame(main_frame)
-        control_frame.pack(fill=tk.X, pady=10)
+        # Configurar larguras das colunas
+        self.tree.column('Name', width=300, minwidth=200)
+        self.tree.column('Current', width=100, minwidth=80, anchor=tk.CENTER)
+        self.tree.column('Min', width=100, minwidth=80, anchor=tk.CENTER)
+        self.tree.column('Need', width=150, minwidth=100, anchor=tk.CENTER)
         
-        # Botões
-        ttk.Button(control_frame, text="Adicionar Item", command=self.add_item).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Remover Item", command=self.remove_item).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Registrar Saída", command=self.register_output).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Registrar Entrada", command=self.register_input).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Gerar Relatório", command=self.generate_report).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Atualizar Estoque Mínimo", command=self.update_min_stock).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Consultar por Ticket", command=self.search_by_ticket).pack(side=tk.LEFT, padx=5)
+        # Frame para os botões com borda e padding
+        button_container = ttk.Frame(main_container, style='Main.TFrame')
+        button_container.pack(fill=tk.X, pady=(0, 10))
+        
+        # Criar um estilo especial para o frame dos botões com borda
+        button_frame = tk.Frame(button_container, 
+                              bg=self.colors['dark_blue'],
+                              bd=2,
+                              relief=tk.GROOVE)
+        button_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Frame para botões da esquerda
+        left_buttons = tk.Frame(button_frame, bg=self.colors['dark_blue'])
+        left_buttons.pack(side=tk.LEFT, padx=10, pady=10)
+        
+        # Frame para botões da direita
+        right_buttons = tk.Frame(button_frame, bg=self.colors['dark_blue'])
+        right_buttons.pack(side=tk.RIGHT, padx=10, pady=10)
+        
+        # Botões de gerenciamento de estoque (esquerda)
+        stock_buttons = [
+            ("Registrar Entrada", self.register_input),
+            ("Registrar Saída", self.register_output),
+            ("Atualizar Estoque Mínimo", self.update_min_stock)
+        ]
+        
+        # Botões de gerenciamento de itens (direita)
+        item_buttons = [
+            ("Adicionar Item", self.add_item),
+            ("Remover Item", self.remove_item),
+            ("Gerar Relatório", self.generate_report),
+            ("Consultar por Ticket", self.search_by_ticket)
+        ]
+        
+        # Estilo especial para os botões
+        button_style = ttk.Style()
+        button_style.configure('Action.TButton',
+                             padding=(15, 8),
+                             font=('Arial', 10))
+        
+        # Adicionar botões com espaçamento consistente
+        for text, command in stock_buttons:
+            btn = ttk.Button(left_buttons,
+                           text=text,
+                           command=command,
+                           style='Action.TButton')
+            btn.pack(side=tk.LEFT, padx=5)
+        
+        for text, command in item_buttons:
+            btn = ttk.Button(right_buttons,
+                           text=text,
+                           command=command,
+                           style='Action.TButton')
+            btn.pack(side=tk.LEFT, padx=5)
         
         # Atualizar a visualização
         self.update_view()
     
+    def on_window_configure(self, event=None):
+        """Ajusta o layout quando a janela é redimensionada"""
+        if event and event.widget == self.root:
+            # Atualizar tamanhos das colunas da tabela
+            width = event.width
+            self.tree.column('Name', width=int(width * 0.4))
+            self.tree.column('Current', width=int(width * 0.2))
+            self.tree.column('Min', width=int(width * 0.2))
+            self.tree.column('Need', width=int(width * 0.2))
+    
     def update_view(self):
         # Limpar a treeview
-        for i in self.tree.get_children():
-            self.tree.delete(i)
+        for item in self.tree.get_children():
+            self.tree.delete(item)
         
         # Buscar dados do banco de dados
         self.c.execute("SELECT name, current_stock, min_stock FROM peripherals ORDER BY name")
         items = self.c.fetchall()
         
-        # Adicionar itens à treeview
-        for item in items:
+        # Adicionar itens à treeview com cores alternadas
+        for i, item in enumerate(items):
             name, current, min_stock = item
             need = max(0, min_stock - current) if current < min_stock else 0
-            self.tree.insert('', tk.END, values=(name, current, min_stock, need if need > 0 else "-"))
+            
+            # Alternar cores das linhas
+            tag = 'evenrow' if i % 2 == 0 else 'oddrow'
+            
+            # Destacar itens que precisam de reposição
+            if need > 0:
+                tag = 'needstock'
+            
+            self.tree.insert('', tk.END, 
+                           values=(name, current, min_stock, need if need > 0 else "-"),
+                           tags=(tag,))
     
     def add_item(self):
         # Janela para adicionar novo item
         add_window = tk.Toplevel(self.root)
         add_window.title("Adicionar Novo Periférico")
+        add_window.configure(bg=self.colors['dark_blue'])
         
-        # Campos do formulário
-        ttk.Label(add_window, text="Nome do Periférico:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
-        name_entry = ttk.Entry(add_window, width=40)
-        name_entry.grid(row=0, column=1, padx=5, pady=5)
+        # Fixar tamanho e centralizar
+        dialog_width = 500
+        dialog_height = 300
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        center_x = int((screen_width - dialog_width) / 2)
+        center_y = int((screen_height - dialog_height) / 2)
         
-        ttk.Label(add_window, text="Estoque Atual:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
-        current_entry = ttk.Entry(add_window, width=10)
+        add_window.geometry(f'{dialog_width}x{dialog_height}+{center_x}+{center_y}')
+        add_window.resizable(False, False)
+        add_window.transient(self.root)  # Tornar modal
+        add_window.grab_set()  # Forçar foco
+        
+        # Frame principal com padding
+        main_frame = ttk.Frame(add_window, style='Main.TFrame')
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Título
+        title_label = ttk.Label(main_frame,
+                              text="Adicionar Novo Periférico",
+                              style='Title.TLabel',
+                              font=('Arial', 16, 'bold'))
+        title_label.pack(pady=(0, 20))
+        
+        # Frame para o formulário com grid
+        form_frame = ttk.Frame(main_frame, style='Main.TFrame')
+        form_frame.pack(fill=tk.X, padx=20)
+        
+        # Campos do formulário usando grid para melhor alinhamento
+        ttk.Label(form_frame, 
+                 text="Nome do Periférico:", 
+                 style='Label.TLabel',
+                 wraplength=200).grid(row=0, column=0, padx=5, pady=10, sticky='w')
+        name_entry = ttk.Entry(form_frame, width=40)
+        name_entry.grid(row=0, column=1, padx=5, pady=10, sticky='w')
+        
+        ttk.Label(form_frame, 
+                 text="Estoque Atual:", 
+                 style='Label.TLabel').grid(row=1, column=0, padx=5, pady=10, sticky='w')
+        current_entry = ttk.Entry(form_frame, width=10)
         current_entry.insert(0, "0")
-        current_entry.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+        current_entry.grid(row=1, column=1, padx=5, pady=10, sticky='w')
         
-        ttk.Label(add_window, text="Estoque Mínimo:").grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
-        min_entry = ttk.Entry(add_window, width=10)
+        ttk.Label(form_frame, 
+                 text="Estoque Mínimo:", 
+                 style='Label.TLabel').grid(row=2, column=0, padx=5, pady=10, sticky='w')
+        min_entry = ttk.Entry(form_frame, width=10)
         min_entry.insert(0, "1")
-        min_entry.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
+        min_entry.grid(row=2, column=1, padx=5, pady=10, sticky='w')
         
-        # Botão para confirmar
+        # Frame para botões
+        button_frame = ttk.Frame(main_frame, style='Control.TFrame')
+        button_frame.pack(fill=tk.X, pady=(20, 0))
+        
+        # Botões
         def confirm_add():
             name = name_entry.get().strip()
             try:
@@ -164,7 +395,15 @@ class InventoryApp:
             except sqlite3.IntegrityError:
                 messagebox.showerror("Erro", "Já existe um periférico com esse nome.")
         
-        ttk.Button(add_window, text="Adicionar", command=confirm_add).grid(row=3, column=1, padx=5, pady=5, sticky=tk.E)
+        ttk.Button(button_frame,
+                  text="Adicionar",
+                  command=confirm_add,
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
+        
+        ttk.Button(button_frame,
+                  text="Cancelar",
+                  command=add_window.destroy,
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
     
     def remove_item(self):
         selected = self.tree.selection()
@@ -193,24 +432,68 @@ class InventoryApp:
         # Janela para registrar saída
         out_window = tk.Toplevel(self.root)
         out_window.title(f"Registrar Saída - {name}")
+        out_window.configure(bg=self.colors['dark_blue'])
         
-        ttk.Label(out_window, text=f"Quantidade atual: {current}").pack(padx=10, pady=5)
+        # Fixar tamanho e centralizar
+        dialog_width = 600
+        dialog_height = 400
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        center_x = int((screen_width - dialog_width) / 2)
+        center_y = int((screen_height - dialog_height) / 2)
         
-        ttk.Label(out_window, text="Quantidade a retirar:").pack(padx=10, pady=5)
-        qty_entry = ttk.Entry(out_window, width=10)
-        qty_entry.pack(padx=10, pady=5)
+        out_window.geometry(f'{dialog_width}x{dialog_height}+{center_x}+{center_y}')
+        out_window.resizable(False, False)
+        out_window.transient(self.root)
+        out_window.grab_set()
         
-        ttk.Label(out_window, text="Número do Ticket/Chamado:").pack(padx=10, pady=5)
-        ticket_entry = ttk.Entry(out_window, width=20)
-        ticket_entry.pack(padx=10, pady=5)
+        # Frame principal com padding
+        main_frame = ttk.Frame(out_window, style='Main.TFrame')
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        ttk.Label(out_window, text="Destinatário:").pack(padx=10, pady=5)
-        recipient_entry = ttk.Entry(out_window, width=30)
-        recipient_entry.pack(padx=10, pady=5)
+        # Título
+        title_label = ttk.Label(main_frame,
+                              text=f"Registrar Saída - {name}",
+                              style='Title.TLabel',
+                              font=('Arial', 16, 'bold'),
+                              wraplength=500)  # Permitir quebra de linha se necessário
+        title_label.pack(pady=(0, 20))
         
-        ttk.Label(out_window, text="Observações:").pack(padx=10, pady=5)
-        notes_entry = ttk.Entry(out_window, width=40)
-        notes_entry.pack(padx=10, pady=5)
+        # Informação do estoque atual
+        stock_label = ttk.Label(main_frame,
+                              text=f"Quantidade atual em estoque: {current}",
+                              style='Label.TLabel',
+                              font=('Arial', 12))
+        stock_label.pack(pady=(0, 20))
+        
+        # Frame para o formulário com grid
+        form_frame = ttk.Frame(main_frame, style='Main.TFrame')
+        form_frame.pack(fill=tk.X, padx=20)
+        
+        # Campos usando grid
+        labels = [
+            "Quantidade a retirar:",
+            "Número do Ticket/Chamado:",
+            "Destinatário:",
+            "Observações:"
+        ]
+        
+        entries = []
+        for i, label in enumerate(labels):
+            ttk.Label(form_frame, 
+                     text=label, 
+                     style='Label.TLabel').grid(row=i, column=0, padx=5, pady=10, sticky='w')
+            
+            width = 10 if i == 0 else 40  # Quantidade menor, outros campos maiores
+            entry = ttk.Entry(form_frame, width=width)
+            entry.grid(row=i, column=1, padx=5, pady=10, sticky='w')
+            entries.append(entry)
+        
+        qty_entry, ticket_entry, recipient_entry, notes_entry = entries
+        
+        # Frame para botões
+        button_frame = ttk.Frame(main_frame, style='Control.TFrame')
+        button_frame.pack(fill=tk.X, pady=(20, 0))
         
         def confirm_output():
             try:
@@ -241,17 +524,29 @@ class InventoryApp:
                 
                 # Registrar no histórico
                 now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                self.c.execute("INSERT INTO history (date, peripheral, operation, quantity, ticket, recipient, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                             (now, name, "Saída", qty, ticket, recipient, notes))
+                self.c.execute("""
+                    INSERT INTO history 
+                    (date, peripheral, operation, quantity, ticket, recipient, notes) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (now, name, "Saída", qty, ticket, recipient, notes))
                 
                 self.conn.commit()
-                messagebox.showinfo("Sucesso", f"Saída de {qty} unidades de {name} registrada para {recipient} (Ticket: {ticket}).")
+                messagebox.showinfo("Sucesso", 
+                                  f"Saída de {qty} unidades de {name} registrada para {recipient}\n(Ticket: {ticket})")
                 out_window.destroy()
                 self.update_view()
             except ValueError:
                 messagebox.showerror("Erro", "A quantidade deve ser um número inteiro.")
         
-        ttk.Button(out_window, text="Confirmar", command=confirm_output).pack(padx=10, pady=10)
+        ttk.Button(button_frame,
+                  text="Confirmar Saída",
+                  command=confirm_output,
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
+        
+        ttk.Button(button_frame,
+                  text="Cancelar",
+                  command=out_window.destroy,
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
     
     def register_input(self):
         selected = self.tree.selection()
@@ -263,29 +558,60 @@ class InventoryApp:
         name = item['values'][0]
         current = item['values'][1]
         
-        # Janela para registrar entrada
-        in_window = tk.Toplevel(self.root)
-        in_window.title(f"Registrar Entrada - {name}")
+        # Criar janela de diálogo
+        dialog = self.create_dialog_window(f"Registrar Entrada - {name}", 400, 450)
         
-        ttk.Label(in_window, text=f"Quantidade atual: {current}").pack(padx=10, pady=5)
+        # Frame principal com padding
+        main_frame = ttk.Frame(dialog, style='Main.TFrame')
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        ttk.Label(in_window, text="Quantidade a adicionar:").pack(padx=10, pady=5)
-        qty_entry = ttk.Entry(in_window, width=10)
-        qty_entry.pack(padx=10, pady=5)
+        # Título
+        title_label = ttk.Label(main_frame,
+                              text=f"Registrar Entrada - {name}",
+                              style='Title.TLabel',
+                              font=('Arial', 14, 'bold'),
+                              wraplength=350)
+        title_label.pack(pady=(0, 20))
         
-        ttk.Label(in_window, text="Fornecedor:").pack(padx=10, pady=5)
-        supplier_entry = ttk.Entry(in_window, width=30)
-        supplier_entry.pack(padx=10, pady=5)
+        # Informação do estoque atual
+        current_label = ttk.Label(main_frame,
+                               text=f"Quantidade atual: {current}",
+                               style='Label.TLabel',
+                               font=('Arial', 12))
+        current_label.pack(pady=(0, 20))
         
-        ttk.Label(in_window, text="Nota Fiscal (opcional):").pack(padx=10, pady=5)
-        invoice_entry = ttk.Entry(in_window, width=30)
-        invoice_entry.pack(padx=10, pady=5)
+        # Frame para o formulário
+        form_frame = ttk.Frame(main_frame, style='Main.TFrame')
+        form_frame.pack(fill=tk.X, padx=20)
+        
+        # Campos do formulário
+        fields = [
+            ("Quantidade a adicionar:", 10),
+            ("Fornecedor:", 40),
+            ("Nota Fiscal (opcional):", 40)
+        ]
+        
+        entries = {}
+        for i, (label_text, width) in enumerate(fields):
+            label = ttk.Label(form_frame,
+                            text=label_text,
+                            style='Label.TLabel',
+                            font=('Arial', 10, 'bold'))
+            label.pack(anchor='w', pady=(10, 5))
+            
+            entry = ttk.Entry(form_frame, width=width)
+            entry.pack(fill=tk.X, pady=(0, 10))
+            entries[label_text] = entry
+        
+        # Frame para botões
+        button_frame = ttk.Frame(main_frame, style='Control.TFrame')
+        button_frame.pack(fill=tk.X, pady=(20, 0))
         
         def confirm_input():
             try:
-                qty = int(qty_entry.get())
-                supplier = supplier_entry.get().strip()
-                invoice = invoice_entry.get().strip()
+                qty = int(entries["Quantidade a adicionar:"].get())
+                supplier = entries["Fornecedor:"].get().strip()
+                invoice = entries["Nota Fiscal (opcional):"].get().strip()
                 
                 if qty <= 0:
                     messagebox.showerror("Erro", "A quantidade deve ser maior que zero.")
@@ -305,238 +631,295 @@ class InventoryApp:
                 if invoice:
                     notes += f", NF: {invoice}"
                 
-                self.c.execute("INSERT INTO history (date, peripheral, operation, quantity, recipient, notes) VALUES (?, ?, ?, ?, ?, ?)",
-                              (now, name, "Entrada", qty, supplier, notes))
+                self.c.execute("""
+                    INSERT INTO history 
+                    (date, peripheral, operation, quantity, recipient, notes) 
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (now, name, "Entrada", qty, supplier, notes))
                 
                 self.conn.commit()
                 messagebox.showinfo("Sucesso", f"Entrada de {qty} unidades de {name} registrada.")
-                in_window.destroy()
+                self.close_dialog(dialog)
                 self.update_view()
             except ValueError:
                 messagebox.showerror("Erro", "A quantidade deve ser um número inteiro.")
         
-        ttk.Button(in_window, text="Confirmar", command=confirm_input).pack(padx=10, pady=10)
+        # Botões
+        ttk.Button(button_frame,
+                  text="Confirmar",
+                  command=confirm_input,
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
+        
+        ttk.Button(button_frame,
+                  text="Cancelar",
+                  command=lambda: self.close_dialog(dialog),
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
     
     def generate_report(self):
-        # Janela para exibir relatório
-        report_window = tk.Toplevel(self.root)
-        report_window.title("Relatório de Estoque")
-        report_window.geometry("1000x700")
+        # Criar janela de diálogo
+        dialog = self.create_dialog_window("Relatório de Estoque", 1000, 700)
         
-        # Frame para o relatório
-        report_frame = ttk.Frame(report_window)
-        report_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Frame principal com padding
+        main_frame = ttk.Frame(dialog, style='Main.TFrame')
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        # Abas para diferentes relatórios
-        notebook = ttk.Notebook(report_frame)
+        # Título
+        title_label = ttk.Label(main_frame,
+                              text="Relatório de Estoque",
+                              style='Title.TLabel',
+                              font=('Arial', 16, 'bold'))
+        title_label.pack(pady=(0, 20))
+        
+        # Frame para botões no topo
+        top_button_frame = ttk.Frame(main_frame, style='Control.TFrame')
+        top_button_frame.pack(fill=tk.X, pady=(0, 20))
+        
+        # Botão de exportação
+        export_btn = ttk.Button(top_button_frame,
+                              text="Exportar Lista de Solicitações",
+                              command=self.export_requests,
+                              style='Action.TButton')
+        export_btn.pack(side=tk.RIGHT, padx=5)
+        
+        # Notebook para abas
+        notebook = ttk.Notebook(main_frame)
         notebook.pack(fill=tk.BOTH, expand=True)
         
         # Aba 1: Estoque atual
-        stock_frame = ttk.Frame(notebook)
+        stock_frame = ttk.Frame(notebook, style='Main.TFrame')
         notebook.add(stock_frame, text="Estoque Atual")
         
-        stock_tree = ttk.Treeview(stock_frame, columns=('Name', 'Current', 'Min', 'Need'), show='headings')
-        stock_tree.heading('Name', text='Periférico')
-        stock_tree.heading('Current', text='Em Estoque')
-        stock_tree.heading('Min', text='Mínimo')
-        stock_tree.heading('Need', text='Precisa Solicitar')
-        stock_tree.column('Name', width=300)
-        stock_tree.column('Current', width=100, anchor=tk.CENTER)
-        stock_tree.column('Min', width=100, anchor=tk.CENTER)
-        stock_tree.column('Need', width=150, anchor=tk.CENTER)
+        # Treeview para o estoque
+        tree_scroll = ttk.Scrollbar(stock_frame)
+        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         
-        vsb = ttk.Scrollbar(stock_frame, orient="vertical", command=stock_tree.yview)
-        stock_tree.configure(yscrollcommand=vsb.set)
+        stock_tree = ttk.Treeview(stock_frame,
+                                columns=('Name', 'Current', 'Min', 'Need'),
+                                show='headings',
+                                style='Treeview',
+                                yscrollcommand=tree_scroll.set)
+        
+        # Configurar colunas
+        headers = {
+            'Name': ('Periférico', 300),
+            'Current': ('Em Estoque', 100),
+            'Min': ('Mínimo', 100),
+            'Need': ('Precisa Solicitar', 150)
+        }
+        
+        for col, (text, width) in headers.items():
+            stock_tree.heading(col, text=text)
+            stock_tree.column(col, width=width, minwidth=width, anchor=tk.CENTER)
         
         stock_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        tree_scroll.config(command=stock_tree.yview)
         
-        # Preencher com dados
+        # Preencher dados do estoque
         self.c.execute("SELECT name, current_stock, min_stock FROM peripherals ORDER BY name")
-        items = self.c.fetchall()
-        
-        for item in items:
+        for item in self.c.fetchall():
             name, current, min_stock = item
             need = max(0, min_stock - current) if current < min_stock else 0
             stock_tree.insert('', tk.END, values=(name, current, min_stock, need if need > 0 else "-"))
         
-        # Aba 2: Itens para solicitar
-        request_frame = ttk.Frame(notebook)
-        notebook.add(request_frame, text="Itens para Solicitar")
+        # Frame para botões
+        button_frame = ttk.Frame(main_frame, style='Control.TFrame')
+        button_frame.pack(fill=tk.X, pady=(20, 0))
         
-        request_tree = ttk.Treeview(request_frame, columns=('Name', 'Current', 'Min', 'Need'), show='headings')
-        request_tree.heading('Name', text='Periférico')
-        request_tree.heading('Current', text='Em Estoque')
-        request_tree.heading('Min', text='Mínimo')
-        request_tree.heading('Need', text='Quantidade a Solicitar')
-        request_tree.column('Name', width=300)
-        request_tree.column('Current', width=100, anchor=tk.CENTER)
-        request_tree.column('Min', width=100, anchor=tk.CENTER)
-        request_tree.column('Need', width=150, anchor=tk.CENTER)
-        
-        vsb2 = ttk.Scrollbar(request_frame, orient="vertical", command=request_tree.yview)
-        request_tree.configure(yscrollcommand=vsb2.set)
-        
-        request_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        vsb2.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        # Preencher com dados
-        self.c.execute("SELECT name, current_stock, min_stock FROM peripherals WHERE current_stock < min_stock ORDER BY name")
+        ttk.Button(button_frame,
+                  text="Fechar",
+                  command=lambda: self.close_dialog(dialog),
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
+    
+    def export_requests(self):
+        """Exporta uma lista formatada dos itens que precisam ser solicitados ao estoque."""
+        # Buscar itens que precisam ser solicitados
+        self.c.execute("""
+            SELECT name, current_stock, min_stock,
+                   (min_stock - current_stock) as need
+            FROM peripherals 
+            WHERE current_stock < min_stock
+            ORDER BY need DESC
+        """)
         items = self.c.fetchall()
         
+        if not items:
+            messagebox.showinfo("Informação", "Não há itens para solicitar no momento.")
+            return
+        
+        # Criar lista formatada
+        export_list = []
+        export_list.append("=== SOLICITAÇÃO DE PERIFÉRICOS - SUPORTE CORPORATIVO ===")
+        export_list.append(f"\nData: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        export_list.append("\nItens para solicitar:")
+        export_list.append("\n{:<40} {:>10} {:>10} {:>15}".format(
+            "Periférico", "Em Estoque", "Mínimo", "Quantidade"))
+        export_list.append("-" * 75)
+        
         for item in items:
-            name, current, min_stock = item
-            need = min_stock - current
-            request_tree.insert('', tk.END, values=(name, current, min_stock, need))
+            name, current, min_stock, need = item
+            export_list.append("{:<40} {:>10} {:>10} {:>15}".format(
+                name, current, min_stock, need))
         
-        # Aba 3: Histórico completo
-        history_frame = ttk.Frame(notebook)
-        notebook.add(history_frame, text="Histórico Completo")
+        export_list.append("\n" + "-" * 75)
+        export_list.append("\nObservações:")
+        export_list.append("1. Esta lista contém apenas itens abaixo do estoque mínimo")
+        export_list.append("2. A quantidade solicitada é baseada na diferença entre estoque mínimo e atual")
         
-        history_tree = ttk.Treeview(history_frame, 
-                                  columns=('Date', 'Peripheral', 'Operation', 'Qty', 'Ticket', 'Recipient', 'Notes'), 
-                                  show='headings')
-        history_tree.heading('Date', text='Data')
-        history_tree.heading('Peripheral', text='Periférico')
-        history_tree.heading('Operation', text='Operação')
-        history_tree.heading('Qty', text='Quantidade')
-        history_tree.heading('Ticket', text='Ticket/Chamado')
-        history_tree.heading('Recipient', text='Destinatário/Fornecedor')
-        history_tree.heading('Notes', text='Observações')
-        history_tree.column('Date', width=120)
-        history_tree.column('Peripheral', width=150)
-        history_tree.column('Operation', width=80)
-        history_tree.column('Qty', width=70, anchor=tk.CENTER)
-        history_tree.column('Ticket', width=100)
-        history_tree.column('Recipient', width=150)
-        history_tree.column('Notes', width=200)
+        # Exibir lista em uma nova janela
+        export_window = tk.Toplevel(self.root)
+        export_window.title("Lista de Solicitações")
+        export_window.geometry("800x600")
+        export_window.configure(bg=self.colors['dark_blue'])
         
-        vsb3 = ttk.Scrollbar(history_frame, orient="vertical", command=history_tree.yview)
-        history_tree.configure(yscrollcommand=vsb3.set)
+        # Frame principal
+        main_frame = ttk.Frame(export_window, style='Main.TFrame')
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        history_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        vsb3.pack(side=tk.RIGHT, fill=tk.Y)
+        # Text widget para exibir a lista
+        text_widget = tk.Text(main_frame, 
+                            wrap=tk.NONE,
+                            font=('Courier New', 11),
+                            bg='white',
+                            fg=self.colors['white'])
+        text_widget.pack(fill=tk.BOTH, expand=True)
         
-        # Preencher com dados
-        self.c.execute("SELECT date, peripheral, operation, quantity, ticket, recipient, notes FROM history ORDER BY date DESC LIMIT 100")
-        records = self.c.fetchall()
+        # Scrollbars
+        y_scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=text_widget.yview)
+        x_scrollbar = ttk.Scrollbar(main_frame, orient="horizontal", command=text_widget.xview)
+        text_widget.configure(yscrollcommand=y_scrollbar.set, xscrollcommand=x_scrollbar.set)
         
-        for record in records:
-            history_tree.insert('', tk.END, values=record)
+        y_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        x_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
         
-        # Aba 4: Relatório por ticket
-        ticket_frame = ttk.Frame(notebook)
-        notebook.add(ticket_frame, text="Relatório por Ticket")
+        # Inserir lista formatada
+        text_widget.insert(tk.END, '\n'.join(export_list))
+        text_widget.config(state=tk.DISABLED)
         
-        # Controles para pesquisa
-        search_frame = ttk.Frame(ticket_frame)
-        search_frame.pack(fill=tk.X, padx=5, pady=5)
+        # Frame para botões
+        button_frame = ttk.Frame(export_window, style='Control.TFrame')
+        button_frame.pack(fill=tk.X, pady=10)
         
-        ttk.Label(search_frame, text="Pesquisar Ticket:").pack(side=tk.LEFT)
-        self.ticket_search_entry = ttk.Entry(search_frame, width=20)
-        self.ticket_search_entry.pack(side=tk.LEFT, padx=5)
-        ttk.Button(search_frame, text="Buscar", command=lambda: self.search_ticket_in_report(self.ticket_search_entry.get(), ticket_tree)).pack(side=tk.LEFT)
+        # Botão para copiar
+        def copy_to_clipboard():
+            self.root.clipboard_clear()
+            self.root.clipboard_append('\n'.join(export_list))
+            messagebox.showinfo("Sucesso", "Lista copiada para a área de transferência!")
         
-        # Treeview para resultados
-        ticket_tree = ttk.Treeview(ticket_frame, 
-                                 columns=('Date', 'Peripheral', 'Operation', 'Qty', 'Recipient', 'Notes'), 
-                                 show='headings')
-        ticket_tree.heading('Date', text='Data')
-        ticket_tree.heading('Peripheral', text='Periférico')
-        ticket_tree.heading('Operation', text='Operação')
-        ticket_tree.heading('Qty', text='Quantidade')
-        ticket_tree.heading('Recipient', text='Destinatário')
-        ticket_tree.heading('Notes', text='Observações')
-        ticket_tree.column('Date', width=120)
-        ticket_tree.column('Peripheral', width=150)
-        ticket_tree.column('Operation', width=80)
-        ticket_tree.column('Qty', width=70, anchor=tk.CENTER)
-        ticket_tree.column('Recipient', width=150)
-        ticket_tree.column('Notes', width=200)
+        ttk.Button(button_frame,
+                  text="Copiar Lista",
+                  command=copy_to_clipboard,
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
         
-        vsb4 = ttk.Scrollbar(ticket_frame, orient="vertical", command=ticket_tree.yview)
-        ticket_tree.configure(yscrollcommand=vsb4.set)
+        # Botão para salvar em arquivo
+        def save_to_file():
+            from tkinter import filedialog
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".txt",
+                filetypes=[("Arquivo de Texto", "*.txt")],
+                title="Salvar Lista de Solicitações"
+            )
+            if file_path:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write('\n'.join(export_list))
+                messagebox.showinfo("Sucesso", "Lista salva com sucesso!")
         
-        ticket_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        vsb4.pack(side=tk.RIGHT, fill=tk.Y)
-    
-    def search_ticket_in_report(self, ticket_number, treeview):
-        # Limpar a treeview
-        for item in treeview.get_children():
-            treeview.delete(item)
-        
-        if not ticket_number:
-            messagebox.showwarning("Aviso", "Digite um número de ticket para pesquisar.")
-            return
-        
-        # Buscar no banco de dados
-        self.c.execute("SELECT date, peripheral, operation, quantity, recipient, notes FROM history WHERE ticket=? ORDER BY date DESC", (ticket_number,))
-        records = self.c.fetchall()
-        
-        if not records:
-            messagebox.showinfo("Informação", f"Nenhum registro encontrado para o ticket {ticket_number}.")
-            return
-        
-        for record in records:
-            treeview.insert('', tk.END, values=record)
+        ttk.Button(button_frame,
+                  text="Salvar em Arquivo",
+                  command=save_to_file,
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
     
     def search_by_ticket(self):
-        # Janela para pesquisa por ticket
-        search_window = tk.Toplevel(self.root)
-        search_window.title("Consultar por Ticket")
-        search_window.geometry("800x500")
+        # Criar janela de diálogo
+        dialog = self.create_dialog_window("Consultar por Ticket", 800, 600)
+        
+        # Frame principal com padding
+        main_frame = ttk.Frame(dialog, style='Main.TFrame')
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
         # Frame de pesquisa
-        search_frame = ttk.Frame(search_window)
-        search_frame.pack(fill=tk.X, padx=10, pady=10)
+        search_frame = ttk.Frame(main_frame, style='Main.TFrame')
+        search_frame.pack(fill=tk.X, pady=(0, 20))
         
-        ttk.Label(search_frame, text="Número do Ticket:").pack(side=tk.LEFT)
-        ticket_entry = ttk.Entry(search_frame, width=20)
-        ticket_entry.pack(side=tk.LEFT, padx=5)
-        ttk.Button(search_frame, text="Buscar", command=lambda: self.search_ticket(ticket_entry.get(), result_tree)).pack(side=tk.LEFT)
+        # Label e entrada para o ticket
+        ttk.Label(search_frame,
+                 text="Número do Ticket:",
+                 style='Label.TLabel',
+                 font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(0, 10))
         
-        # Treeview para resultados
-        result_tree = ttk.Treeview(search_window, 
-                                  columns=('Date', 'Peripheral', 'Operation', 'Qty', 'Recipient', 'Notes'), 
-                                  show='headings')
-        result_tree.heading('Date', text='Data')
-        result_tree.heading('Peripheral', text='Periférico')
-        result_tree.heading('Operation', text='Operação')
-        result_tree.heading('Qty', text='Quantidade')
-        result_tree.heading('Recipient', text='Destinatário')
-        result_tree.heading('Notes', text='Observações')
-        result_tree.column('Date', width=120)
-        result_tree.column('Peripheral', width=150)
-        result_tree.column('Operation', width=80)
-        result_tree.column('Qty', width=70, anchor=tk.CENTER)
-        result_tree.column('Recipient', width=150)
-        result_tree.column('Notes', width=200)
+        ticket_entry = ttk.Entry(search_frame, width=30, font=('Arial', 10))
+        ticket_entry.pack(side=tk.LEFT, padx=(0, 10))
         
-        vsb = ttk.Scrollbar(search_window, orient="vertical", command=result_tree.yview)
-        result_tree.configure(yscrollcommand=vsb.set)
+        # Frame para a tabela
+        table_frame = ttk.Frame(main_frame, style='Main.TFrame')
+        table_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Treeview e Scrollbar
+        tree_scroll = ttk.Scrollbar(table_frame)
+        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        columns = ('Date', 'Peripheral', 'Operation', 'Qty', 'Recipient', 'Notes')
+        result_tree = ttk.Treeview(table_frame,
+                                 columns=columns,
+                                 show='headings',
+                                 style='Treeview',
+                                 yscrollcommand=tree_scroll.set)
+        
+        # Configurar colunas
+        headers = {
+            'Date': ('Data', 150),
+            'Peripheral': ('Periférico', 200),
+            'Operation': ('Operação', 100),
+            'Qty': ('Quantidade', 100),
+            'Recipient': ('Destinatário', 150),
+            'Notes': ('Observações', 200)
+        }
+        
+        for col, (text, width) in headers.items():
+            result_tree.heading(col, text=text)
+            result_tree.column(col, width=width, minwidth=width)
         
         result_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        vsb.pack(side=tk.RIGHT, fill=tk.Y)
-    
-    def search_ticket(self, ticket_number, treeview):
-        # Limpar a treeview
-        for item in treeview.get_children():
-            treeview.delete(item)
+        tree_scroll.config(command=result_tree.yview)
         
-        if not ticket_number:
-            messagebox.showwarning("Aviso", "Digite um número de ticket para pesquisar.")
-            return
+        def search():
+            # Limpar a treeview
+            for item in result_tree.get_children():
+                result_tree.delete(item)
+            
+            ticket_number = ticket_entry.get().strip()
+            if not ticket_number:
+                messagebox.showwarning("Aviso", "Digite um número de ticket para pesquisar.")
+                return
+            
+            # Buscar no banco de dados
+            self.c.execute("""
+                SELECT date, peripheral, operation, quantity, recipient, notes 
+                FROM history 
+                WHERE ticket=? 
+                ORDER BY date DESC
+            """, (ticket_number,))
+            records = self.c.fetchall()
+            
+            if not records:
+                messagebox.showinfo("Informação", f"Nenhum registro encontrado para o ticket {ticket_number}.")
+                return
+            
+            for record in records:
+                result_tree.insert('', tk.END, values=record)
         
-        # Buscar no banco de dados
-        self.c.execute("SELECT date, peripheral, operation, quantity, recipient, notes FROM history WHERE ticket=? ORDER BY date DESC", (ticket_number,))
-        records = self.c.fetchall()
+        # Botões
+        button_frame = ttk.Frame(main_frame, style='Control.TFrame')
+        button_frame.pack(fill=tk.X, pady=(20, 0))
         
-        if not records:
-            messagebox.showinfo("Informação", f"Nenhum registro encontrado para o ticket {ticket_number}.")
-            return
+        ttk.Button(button_frame,
+                  text="Buscar",
+                  command=search,
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
         
-        for record in records:
-            treeview.insert('', tk.END, values=record)
+        ttk.Button(button_frame,
+                  text="Fechar",
+                  command=lambda: self.close_dialog(dialog),
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
     
     def update_min_stock(self):
         selected = self.tree.selection()
@@ -548,16 +931,45 @@ class InventoryApp:
         name = item['values'][0]
         current_min = item['values'][2]
         
-        # Janela para atualizar estoque mínimo
-        min_window = tk.Toplevel(self.root)
-        min_window.title(f"Atualizar Estoque Mínimo - {name}")
+        # Criar janela de diálogo
+        dialog = self.create_dialog_window(f"Atualizar Estoque Mínimo - {name}", 400, 300)
         
-        ttk.Label(min_window, text=f"Estoque mínimo atual: {current_min}").pack(padx=10, pady=5)
+        # Frame principal com padding
+        main_frame = ttk.Frame(dialog, style='Main.TFrame')
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        ttk.Label(min_window, text="Novo estoque mínimo:").pack(padx=10, pady=5)
-        min_entry = ttk.Entry(min_window, width=10)
+        # Título
+        title_label = ttk.Label(main_frame,
+                              text=f"Atualizar Estoque Mínimo\n{name}",
+                              style='Title.TLabel',
+                              font=('Arial', 14, 'bold'),
+                              wraplength=350,
+                              justify='center')
+        title_label.pack(pady=(0, 20))
+        
+        # Frame para o formulário
+        form_frame = ttk.Frame(main_frame, style='Main.TFrame')
+        form_frame.pack(fill=tk.X, padx=20)
+        
+        # Estoque mínimo atual
+        ttk.Label(form_frame,
+                 text=f"Estoque mínimo atual: {current_min}",
+                 style='Label.TLabel',
+                 font=('Arial', 12)).pack(pady=(0, 20))
+        
+        # Novo estoque mínimo
+        ttk.Label(form_frame,
+                 text="Novo estoque mínimo:",
+                 style='Label.TLabel',
+                 font=('Arial', 10, 'bold')).pack(anchor='w', pady=(0, 5))
+        
+        min_entry = ttk.Entry(form_frame, width=10, font=('Arial', 10))
         min_entry.insert(0, str(current_min))
-        min_entry.pack(padx=10, pady=5)
+        min_entry.pack(pady=(0, 20))
+        
+        # Frame para botões
+        button_frame = ttk.Frame(main_frame, style='Control.TFrame')
+        button_frame.pack(fill=tk.X, pady=(20, 0))
         
         def confirm_update():
             try:
@@ -570,12 +982,54 @@ class InventoryApp:
                 self.c.execute("UPDATE peripherals SET min_stock=? WHERE name=?", (new_min, name))
                 self.conn.commit()
                 messagebox.showinfo("Sucesso", f"Estoque mínimo de {name} atualizado para {new_min}.")
-                min_window.destroy()
+                self.close_dialog(dialog)
                 self.update_view()
             except ValueError:
                 messagebox.showerror("Erro", "O estoque mínimo deve ser um número inteiro.")
         
-        ttk.Button(min_window, text="Atualizar", command=confirm_update).pack(padx=10, pady=10)
+        ttk.Button(button_frame,
+                  text="Atualizar",
+                  command=confirm_update,
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
+        
+        ttk.Button(button_frame,
+                  text="Cancelar",
+                  command=lambda: self.close_dialog(dialog),
+                  style='Action.TButton').pack(side=tk.RIGHT, padx=5)
+    
+    def create_dialog_window(self, title, width=500, height=300):
+        """Cria uma janela de diálogo padrão"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(title)
+        dialog.configure(bg=self.colors['dark_blue'])
+        
+        # Centralizar a janela
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        center_x = int((screen_width - width) / 2)
+        center_y = int((screen_height - height) / 2)
+        
+        dialog.geometry(f'{width}x{height}+{center_x}+{center_y}')
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Impedir minimização
+        dialog.protocol("WM_DELETE_WINDOW", lambda: self.close_dialog(dialog))
+        
+        # Configurar ícone
+        try:
+            icon_path = os.path.join('assets', 'uol_icon.ico')
+            dialog.iconbitmap(icon_path)
+        except Exception as e:
+            print(f"Erro ao carregar o ícone: {e}")
+        
+        return dialog
+
+    def close_dialog(self, dialog):
+        """Fecha a janela de diálogo"""
+        dialog.grab_release()
+        dialog.destroy()
     
     def __del__(self):
         # Fechar conexão com o banco de dados
