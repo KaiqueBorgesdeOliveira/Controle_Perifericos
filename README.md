@@ -1,4 +1,6 @@
-![image](https://github.com/user-attachments/assets/c72ba9ff-907e-4b4f-9992-a7a46f9fbf0c)
+![{A90A7A2F-634D-4840-8F03-174EEAC2E5AE}](https://github.com/user-attachments/assets/07dfef80-792b-4793-b926-c112bc56be95)
+
+
 
 # 📦 Controle de Periféricos - Sistema de Gerenciamento
 
