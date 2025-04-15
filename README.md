@@ -48,6 +48,7 @@ Aplicativo desktop para controle de estoque de periféricos com registro de cham
 - Tkinter (GUI)
 - SQLite (Banco de dados)
 - PyInstaller (Build)
+- Cursor AI
 
 ## 📥 Instalação
 
